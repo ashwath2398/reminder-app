@@ -5,7 +5,7 @@ import os
 import uuid
 
 dynamodb = boto3.resource('dynamodb')
-table_name = os.environ.get('task-table')
+table_name = os.environ.get('TABLE_NAME')
 
 def lambda_handler(event, context):
     try:
@@ -19,13 +19,12 @@ def lambda_handler(event, context):
         task_item = {
         'task_id': task_id,
         'task_name': body['task_name'],
-        'task_description': body['task_description'],
-        'due_date': body['due_date'],
+        'task_description': body.get('task_description'),
+        'due_date': body.get('due_date'),
         }
     
         # Add the new task to the DynamoDB table
-
-        table = dynamodb.Table(task-table)
+        table = dynamodb.Table(table_name)
         table.put_item(Item=task_item)
     
         # Return a success response
@@ -39,5 +38,6 @@ def lambda_handler(event, context):
         'body': json.dumps({'message': 'Task added successfully', 'task_id': task_id})
         }
     except Exception as e:
+        print(f"Error occurred: {str(e)}")
         return {
         'statusCode': 500, 'body': str(e)}
