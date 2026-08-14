@@ -3,29 +3,68 @@
 <head>
     <title>Serverless Task Reminder</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; max-width: 400px; }
-        input, button { width: 100%; padding: 10px; margin-top: 5px; margin-bottom: 15px; }
-        button { background-color: #007bff; color: white; border: none; cursor: pointer; }
+        body { font-family: sans-serif; padding: 20px; max-width: 500px; margin: auto; }
+        input, button { padding: 10px; margin-top: 5px; margin-bottom: 15px; }
+        .full-width { width: 100%; box-sizing: border-box; }
+        .btn-primary { background-color: #007bff; color: white; border: none; cursor: pointer; width: 100%; }
+        .task-card { border: 1px solid #ccc; padding: 15px; margin-bottom: 10px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; }
+        .btn-complete { background-color: #28a745; color: white; border: none; padding: 8px 12px; cursor: pointer; border-radius: 3px; }
     </style>
 </head>
 <body>
     <h2>Add a Task</h2>
     <form id="taskForm">
         <label>Task Name:</label>
-        <input type="text" id="task_name" placeholder="e.g., Renew Insurance" required>
+        <input type="text" id="task_name" class="full-width" required>
         
         <label>Due Date:</label>
-        <input type="date" id="due_date" value="2026-08-20" required>
+        <input type="date" id="due_date" class="full-width" required>
         
-        <button type="submit">Save Task</button>
+        <button type="submit" class="btn-primary">Save Task</button>
     </form>
     <p id="status"></p>
 
+    <h2>My Tasks</h2>
+    <div id="taskList">Loading tasks...</div>
+
     <script>
+        // REPLACE THIS WITH YOUR CLOUDFRONT OR API GATEWAY URL ending in /tasks
+        const API_URL = "https://lc3bg51n1f.execute-api.ap-south-1.amazonaws.com/tasks"; 
+
+        // 1. Fetch and display tasks on load
+        async function loadTasks() {
+            const taskList = document.getElementById('taskList');
+            try {
+                const response = await fetch(API_URL);
+                const tasks = await response.json();
+                
+                taskList.innerHTML = "";
+                if(tasks.length === 0) {
+                    taskList.innerHTML = "<p>No tasks right now!</p>";
+                    return;
+                }
+
+                tasks.forEach(task => {
+                    const div = document.createElement('div');
+                    div.className = 'task-card';
+                    div.innerHTML = `
+                        <div>
+                            <strong>${task.task_name}</strong><br>
+                            <small>Due: ${task.due_date}</small>
+                        </div>
+                        <button class="btn-complete" onclick="deleteTask('${task.task_id}')">Mark as Complete</button>
+                    `;
+                    taskList.appendChild(div);
+                });
+            } catch (err) {
+                taskList.innerHTML = "<p>Error loading tasks.</p>";
+            }
+        }
+
+        // 2. Add a new task
         document.getElementById('taskForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const statusLabel = document.getElementById('status');
-            statusLabel.innerText = "Saving...";
+            document.getElementById('status').innerText = "Saving...";
             
             const data = {
                 task_name: document.getElementById('task_name').value,
@@ -33,23 +72,38 @@
             };
 
             try {
-                // Your exact API Gateway URL
-                const response = await fetch("https://volgt0di4h.execute-api.ap-south-1.amazonaws.com/tasks", {
+                const response = await fetch(API_URL, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(data)
                 });
                 
                 if (response.ok) {
-                    statusLabel.innerText = "Task saved securely!";
+                    document.getElementById('status').innerText = "Task saved!";
                     document.getElementById('taskForm').reset();
-                } else {
-                    statusLabel.innerText = "Error saving task.";
+                    loadTasks(); // Reload the list
                 }
             } catch (err) {
-                statusLabel.innerText = "Connection error.";
+                document.getElementById('status').innerText = "Connection error.";
             }
         });
+
+        // 3. Delete a task
+        async function deleteTask(taskId) {
+            try {
+                const response = await fetch(`${API_URL}/${taskId}`, {
+                    method: "DELETE"
+                });
+                if (response.ok) {
+                    loadTasks(); // Reload the list to remove the completed item
+                }
+            } catch (err) {
+                alert("Failed to delete task.");
+            }
+        }
+
+        // Run on page load
+        loadTasks();
     </script>
 </body>
 </html>

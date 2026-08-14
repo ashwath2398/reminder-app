@@ -78,6 +78,7 @@ resource "aws_iam_policy" "lambda_policy" {
         Action = [
           "dynamodb:PutItem",
           "dynamodb:Scan",
+          "dynamodb:DeleteItem"
         ]
         Effect   = "Allow",
         Resource = aws_dynamodb_table.task_table.arn
@@ -142,13 +143,13 @@ resource "aws_apigatewayv2_api" "task_api" {
   protocol_type = "HTTP"
   cors_configuration {
     allow_origins = ["*"]
-    allow_methods = ["*"]
+    allow_methods = ["GET", "POST", "DELETE", "OPTIONS"]
     allow_headers = ["*"]
   }
 }
 
 #connect api gateway to add_task lambda function
-resource "aws_apigatewayv2_integration" "add_task_integration" {
+resource "aws_apigatewayv2_integration" "task_integration" {
   api_id           = aws_apigatewayv2_api.task_api.id
   integration_type = "AWS_PROXY"
   integration_uri  = aws_lambda_function.add_task_lambda.invoke_arn
@@ -160,7 +161,21 @@ resource "aws_apigatewayv2_integration" "add_task_integration" {
 resource "aws_apigatewayv2_route" "add_task_route" {
   api_id    = aws_apigatewayv2_api.task_api.id
   route_key = "POST /tasks"
-  target    = "integrations/${aws_apigatewayv2_integration.add_task_integration.id}"
+  target    = "integrations/${aws_apigatewayv2_integration.task_integration.id}"
+}
+
+#route to GET tasks
+resource "aws_apigatewayv2_route" "get_tasks_route" {
+  api_id    = aws_apigatewayv2_api.task_api.id
+  route_key = "GET /tasks"
+  target    = "integrations/${aws_apigatewayv2_integration.task_integration.id}"
+}
+
+#route to delete task
+resource "aws_apigatewayv2_route" "delete_task_route" {
+  api_id    = aws_apigatewayv2_api.task_api.id
+  route_key = "DELETE /tasks/{task_id}"
+  target    = "integrations/${aws_apigatewayv2_integration.task_integration.id}"
 }
 
 #deploying the API

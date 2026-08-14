@@ -11,8 +11,10 @@ topic_arn = os.environ.get('SNS_TOPIC_ARN')
 
 def lambda_handler(event, context):
     try:
-        # Calculate the date 7 days from now
-        target_date = (datetime.now() + timedelta(days=7)).strftime('%Y-%m-%d')
+        # 7 days to expire
+        today = datetime.now()
+        today_str = today.strftime('%Y-%m-%d')
+        target_date = (today + timedelta(days=7)).strftime('%Y-%m-%d')
 
         #fetch tasks due in exactly 7 days
         response = table.scan()
@@ -20,15 +22,15 @@ def lambda_handler(event, context):
 
         reminders = []
         for task in tasks:
-            if task.get('due_date') == target_date:
-                message = f"Reminder: '{task['task_name']}' is due on {task['due_date']}."
-
-                sns_client.publish(
-                    TopicArn=topic_arn,
-                    Subject='Task Reminder',
-                    Message=message
-                )
-                reminders.append(message)
+            due_date = task.get('due_date')
+            if due_date and today_str < due_date <= target_date:
+                message = f"Reminder: '{task['task_name']}' is due on {due_date}."
+                sns_client.publish(TopicArn=topic_arn, Subject='Task Reminder', Message=message)
+                reminders.append(task)
+                return {
+                    'statusCode': 200,
+                    'body': f"Sent reminders for {len(reminders)} tasks."
+                }
     except Exception as e:
         print(f"Error occurred: {str(e)}")
         return {"statusCode": 500, "body": str(e)}
