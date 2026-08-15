@@ -1,4 +1,5 @@
 #takes data from my webpage and adds it to the database
+from datetime import datetime, timedelta
 import json
 import boto3
 import os
@@ -22,11 +23,20 @@ def lambda_handler(event, context):
         if method == 'POST':
             body = json.loads(event['body'])
             task_id = str(uuid.uuid4())
+            due_date_str = body.get('due_date')
+             #calculate expiry time after 24 hours of due date
+            expiration_time = None
+            if due_date_str:
+                due_date = datetime.strptime(due_date_str, '%Y-%m-%d')
+                expire_obj = due_date + timedelta(days=1)
+                expiration_time = int((due_date + timedelta(days=1)).timestamp())
+                
             task_item = {
                 'task_id': task_id,
                 'task_name': body['task_name'],
                 'task_description': body.get('task_description'),
                 'due_date': body.get('due_date'),
+                'expiry': expiration_time
             }
             table.put_item(Item=task_item)
             return {'statusCode': 200, 'body': json.dumps({'message': 'Task added', 'task_id': task_id}), 'headers': headers}

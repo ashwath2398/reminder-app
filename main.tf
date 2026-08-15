@@ -8,6 +8,10 @@ resource "aws_dynamodb_table" "task_table" {
     name = "task_id"
     type = "S"
   }
+  ttl {
+    attribute_name = "expiry"
+    enabled        = true
+  }
 }
 
 #sns for email notification

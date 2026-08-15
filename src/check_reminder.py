@@ -23,13 +23,21 @@ def lambda_handler(event, context):
         reminders = []
         for task in tasks:
             due_date = task.get('due_date')
-            if due_date and today_str < due_date <= target_date:
-                message = f"Reminder: '{task['task_name']}' is due on {due_date}."
-                sns_client.publish(TopicArn=topic_arn, Subject='Task Reminder', Message=message)
-                reminders.append(task)
-                return {
+            if due_date and today_str <= due_date <= target_date:
+                reminders.append(f"Reminder: '{task['task_name']}' is due on {due_date}.")
+
+        if reminders:
+            message_body = "Upcoming tasks:\n" + "\n".join(reminders)
+            sns_client.publish(TopicArn=topic_arn, Subject='Task Reminder', Message=message_body)
+            
+            return {
                     'statusCode': 200,
                     'body': f"Sent reminders for {len(reminders)} tasks."
+                }
+        else:
+            return {
+                    'statusCode': 200,
+                    'body': "No tasks due."
                 }
     except Exception as e:
         print(f"Error occurred: {str(e)}")
