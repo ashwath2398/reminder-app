@@ -12,7 +12,9 @@
     </style>
 </head>
 <body>
-    <h2>Add a Task</h2>
+    <!-- The title now has an ID and prevents text highlighting when double-clicked -->
+    <h2 id="secretTitle" style="user-select: none;">Add a Task</h2>
+    
     <form id="taskForm">
         <label>Task Name:</label>
         <input type="text" id="task_name" class="full-width" required>
@@ -24,14 +26,17 @@
     </form>
     <p id="status"></p>
 
-    <h2>My Tasks</h2>
-    <div id="taskList">Loading tasks...</div>
+    <!-- This entire section is hidden by default -->
+    <div id="hiddenTaskSection" style="display: none;">
+        <h2>My Tasks</h2>
+        <div id="taskList">Loading tasks...</div>
+    </div>
 
     <script>
-        // REPLACE THIS WITH YOUR CLOUDFRONT OR API GATEWAY URL ending in /tasks
+        //add your API endpoint URL here
         const API_URL = "https://lc3bg51n1f.execute-api.ap-south-1.amazonaws.com/tasks"; 
 
-        // 1. Fetch and display tasks on load
+        // 1. Fetch and display tasks
         async function loadTasks() {
             const taskList = document.getElementById('taskList');
             try {
@@ -81,7 +86,7 @@
                 if (response.ok) {
                     document.getElementById('status').innerText = "Task saved!";
                     document.getElementById('taskForm').reset();
-                    loadTasks(); // Reload the list
+                    loadTasks(); // Updates the hidden list in the background
                 }
             } catch (err) {
                 document.getElementById('status').innerText = "Connection error.";
@@ -95,15 +100,39 @@
                     method: "DELETE"
                 });
                 if (response.ok) {
-                    loadTasks(); // Reload the list to remove the completed item
+                    loadTasks(); // Reload the list
                 }
             } catch (err) {
                 alert("Failed to delete task.");
             }
         }
 
-        // Run on page load
-        loadTasks();
+        // 4. Secret mobile-friendly double-tap trigger
+    let tapCount = 0;
+    let tapTimer;
+
+    document.getElementById('secretTitle').addEventListener('click', (e) => {
+        tapCount++;
+        
+        if (tapCount === 1) {
+            // Start a timer. If they don't tap again within 400ms, reset the count.
+            tapTimer = setTimeout(() => {
+                tapCount = 0;
+            }, 400);
+        } else if (tapCount === 2) {
+            // Double tap registered! Clear timer and toggle the section.
+            clearTimeout(tapTimer);
+            tapCount = 0;
+            
+            const taskSection = document.getElementById('hiddenTaskSection');
+            if (taskSection.style.display === 'none') {
+                taskSection.style.display = 'block';
+                loadTasks(); 
+            } else {
+                taskSection.style.display = 'none'; 
+            }
+        }
+    });
     </script>
 </body>
 </html>
