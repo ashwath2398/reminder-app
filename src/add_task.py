@@ -47,7 +47,7 @@ def lambda_handler(event, context):
             task_item = {
                 'task_id': task_id,
                 'task_name': body['task_name'],
-                'task_description': body.get('task_description'),
+                'task_description': body.get('task_description', ''),
                 'due_date': body.get('due_date'),
                 'expiry': expiration_time,
                 'user_email': user_email
@@ -59,7 +59,7 @@ def lambda_handler(event, context):
             response = table.scan()
             tasks = response.get('Items', [])
             tasks.sort(key=lambda x: x.get('due_date', '9999-12-31'))  # Sort by due_date, default to a far future date if missing
-            return {'statusCode': 200, 'body': json.dumps(tasks), 'headers': headers}
+            return {'statusCode': 200, 'body': json.dumps(tasks, default=str), 'headers': headers}
 
         elif method == 'DELETE':
             task_id = event.get('pathParameters', {}).get('task_id')

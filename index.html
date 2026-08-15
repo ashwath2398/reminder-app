@@ -64,8 +64,10 @@
                     `;
                     taskList.appendChild(div);
                 });
-            } catch (err) {
-                taskList.innerHTML = "<p>Error loading tasks.</p>";
+            } 
+             catch (err) {
+                console.error("Fetch error details:", err);
+                taskList.innerHTML = "<p>Error loading tasks. Check browser console.</p>";
             }
         }
 
@@ -91,6 +93,10 @@
                     document.getElementById('status').innerText = "Task saved!";
                     document.getElementById('taskForm').reset();
                     loadTasks(); // Updates the hidden list in the background
+                
+                } else {
+                    const errorMsg = await response.text();
+                    document.getElementById('status').innerText = "Backend Error: " + errorMsg;
                 }
             } catch (err) {
                 document.getElementById('status').innerText = "Connection error.";

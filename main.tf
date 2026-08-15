@@ -19,19 +19,14 @@ resource "aws_dynamodb_table" "task_table" {
     name = "task-notification-topic"
   }
 
-#sns subscription for email notification
-  resource "aws_sns_topic_subscription" "task_notification_email" {
-    topic_arn = aws_sns_topic.task_notification.arn
-    protocol  = "email"
-    endpoint  = "ashwathc23@gmail.com"
-  } 
+
     output "sns_topic_arn" {
       value = aws_sns_topic.task_notification.arn
     }
 
     output "dynamodb_table_name" {
       value = aws_dynamodb_table.task_table.name
-    }   
+    }
 
 #zip the python file
 data "archive_file" "add_task_zip" {
@@ -89,7 +84,8 @@ resource "aws_iam_policy" "lambda_policy" {
       },
       {
         Action = [
-          "sns:Publish"
+          "sns:Publish",
+          "sns:Subscribe"
         ]
         Effect   = "Allow",
         Resource = aws_sns_topic.task_notification.arn
