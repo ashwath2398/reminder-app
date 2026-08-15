@@ -188,7 +188,7 @@ resource "aws_apigatewayv2_stage" "task_api_stage" {
   name        = "$default"
   auto_deploy = true
 
-  #bot protection settings
+  #bot protection values
   default_route_settings {
     throttling_burst_limit = 10 #max request
     throttling_rate_limit  = 5 #max per second

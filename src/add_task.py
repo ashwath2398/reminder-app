@@ -6,8 +6,10 @@ import os
 import uuid
 
 dynamodb = boto3.resource('dynamodb')
+sns_client = boto3.client('sns')
 table = dynamodb.Table(os.environ.get('TABLE_NAME'))
 table_name = os.environ.get('TABLE_NAME')
+topic_arn = os.environ.get('SNS_TOPIC_ARN')
 
 def lambda_handler(event, context):
     try:
@@ -24,6 +26,17 @@ def lambda_handler(event, context):
             body = json.loads(event['body'])
             task_id = str(uuid.uuid4())
             due_date_str = body.get('due_date')
+            user_email = body.get('user_email')
+            if user_email and topic_arn:
+                filter_policy = json.dumps({"email": [user_email]})
+                #subscribe the user to the SNS topic
+                sns_client.subscribe(
+                    TopicArn=topic_arn,
+                    Protocol='email',
+                    Endpoint=user_email,
+                    Attributes={'FilterPolicy': filter_policy}
+                )
+
              #calculate expiry time after 24 hours of due date
             expiration_time = None
             if due_date_str:
@@ -36,7 +49,8 @@ def lambda_handler(event, context):
                 'task_name': body['task_name'],
                 'task_description': body.get('task_description'),
                 'due_date': body.get('due_date'),
-                'expiry': expiration_time
+                'expiry': expiration_time,
+                'user_email': user_email
             }
             table.put_item(Item=task_item)
             return {'statusCode': 200, 'body': json.dumps({'message': 'Task added', 'task_id': task_id}), 'headers': headers}
