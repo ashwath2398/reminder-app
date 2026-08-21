@@ -27,15 +27,19 @@ def lambda_handler(event, context):
             task_id = str(uuid.uuid4())
             due_date_str = body.get('due_date')
             user_email = body.get('user_email')
+            raw_email = body.get('user_email')
+            user_email = raw_email.strip().lower() if raw_email else None
             if user_email and topic_arn:
                 filter_policy = json.dumps({"email": [user_email]})
                 #subscribe the user to the SNS topic
-                sns_client.subscribe(
+                sns_client.subscribe (
                     TopicArn=topic_arn,
                     Protocol='email',
                     Endpoint=user_email,
-                    Attributes={'FilterPolicy': filter_policy}
+                    Attributes={'FilterPolicy': filter_policy},
+                    ReturnSubscriptionArn=True
                 )
+                
 
              #calculate expiry time after 24 hours of due date
             expiration_time = None
